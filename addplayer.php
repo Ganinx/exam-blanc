@@ -4,6 +4,10 @@ $pdo = dbconnect();
 session_start();
 
 
+if(!array_key_exists("identifiant", $_SESSION)){
+    header("Location: index.php");
+}
+
 
 
 $allowedExtension = ["image/jpeg","image/png"];
@@ -24,58 +28,35 @@ if($_SERVER["REQUEST_METHOD"]=='POST'){
     }else{
         $errors["image"]= "le format est pas bon";
     }
-    if(empty($_POST["pv"])){
-        $errors["pv"] = "veuillez saisir un nombre de pv";
-    }elseif(!is_numeric($_POST["pv"])){
-        $errors["pv"]= 'veuillez saisir un nombre entier';
-    }elseif($_POST["pv"] <= 0 || $_POST["pv"] > 200 ){
-        $errors["pv"]= 'pas bon nombre';
+
+    if(empty($_POST["prenom"])){
+        $errors["prenom"] = "veuillez saisir un prénom";
     }
 
-    if(empty($_POST["attaque"])){
-        $errors["attaque"] = "veuillez saisir un nombre de pv";
-    }elseif(!is_numeric($_POST["attaque"])){
-        $errors["attaque"]= 'veuillez saisir un nombre entier';
-    }elseif($_POST["attaque"] <= 0 || $_POST["attaque"] > 200 ){
-        $errors["attaque"]= 'pas bon nombre';
+    if(empty($_POST["age"])){
+        $errors["age"] = "veuillez saisir une date de naissance";
+    }
+    if(!empty($_POST["age"])){
+        $dateOfBirth = DateTime::createFromFormat('Y-m-d', $_POST['age']);
+        $dateToday = new DateTime();
+        $agePlayer = $dateToday->diff($dateOfBirth)->y;
+        if ($agePlayer < 18 || $agePlayer > 45) {
+            $errors["age"] = "Veuillez saisir un joueur ayant l'âge légal (entre 18 et 45 ans).";
+        }
+    }else{
+        $errors["age"] = "Saisissez une date ! ";
     }
 
-    if(empty($_POST["defense"])){
-        $errors["defense"] = "veuillez saisir un nombre de pv";
-    }elseif(!is_numeric($_POST["defense"])){
-        $errors["defense"]= 'veuillez saisir un nombre entier';
-    }elseif($_POST["defense"] <= 0 || $_POST["defense"] > 200 ){
-        $errors["defense"]= 'pas bon nombre';
-    }
-
-    if(empty($_POST["vitesse"])){
-        $errors["vitess"] = "veuillez saisir un nombre de pv";
-    }elseif(!is_numeric($_POST["vitesse"])){
-        $errors["vitesse"]= 'veuillez saisir un nombre entier';
-    }elseif($_POST["vitesse"] <= 0 || $_POST["vitesse"] > 200 ){
-        $errors["vitesse"]= 'pas bon nombre';
-    }
-
-    if(empty($_POST["special"])){
-        $errors["special"] = "veuillez saisir un nombre de pv";
-    }elseif(!is_numeric($_POST["special"])){
-        $errors["special"]= 'veuillez saisir un nombre entier';
-    }elseif($_POST["special"] <= 0 || $_POST["special"] > 200 ){
-        $errors["special"]= 'pas bon nombre';
-    }
     if(count($errors) == 0){
         move_uploaded_file($_FILES["image"]["tmp_name"],$files_image);
 
-        $req = $pdo->prepare("INSERT INTO pokemon (image,nom,pv,attaque,defense,vitesse,special,type_id)
-            VALUES (:image, :nom, :pv, :attaque, :defense, :vitesse, :special, :type_id)");
-        $req-> execute(["image"=>$files_image,
-            "nom"=>$_POST["nom"],
-            "pv"=>$_POST["pv"],
-            "attaque"=>$_POST["attaque"],
-            "defense"=>$_POST["defense"],
-            "vitesse"=>$_POST["vitesse"],
-            "special"=>$_POST["special"],
-            "type_id"=>$_POST["type"]
+        $req = $pdo->prepare("INSERT INTO players (name,firstname,date_of_birth,post_id,image)
+            VALUES (:name, :firstname, :date_of_birth, :post_id, :image)");
+        $req-> execute(["name"=>$_POST["nom"],
+            "firstname"=>$_POST["prenom"],
+            "date_of_birth"=>$_POST["age"],
+            "post_id"=>$_POST["poste"],
+            "image"=>$files_image
         ]);
     }
 }
@@ -117,28 +98,28 @@ if($_SERVER["REQUEST_METHOD"]=='POST'){
                     <?php displayFormError("image",$errors)?>
                 </div>
                 <div class="form-group">
-                    <label for="pv">Prenom</label>
-                    <input type="text" name="prenom" value="<?php displayForValue("pv")?>" class="form-control <?php displayValidationBootstrapClass($errors,"pv") ?>">
-                    <?php displayFormError("pv",$errors)?>
+                    <label for="prenom">Prenom</label>
+                    <input type="text" name="prenom" value="<?php displayForValue("prenom")?>" class="form-control <?php displayValidationBootstrapClass($errors,"prenom") ?>">
+                    <?php displayFormError("prenom",$errors)?>
                 </div>
                 <div class="form-group">
-                    <label for="attaque">Age</label>
-                    <input type="number" name="age" value="<?php displayForValue("attaque")?>" class="form-control <?php displayValidationBootstrapClass($errors,"attaque") ?>">
-                    <?php displayFormError("attaque",$errors)?>
+                    <label for="age">Age</label>
+                    <input type="date" name="age" value="<?php displayForValue("age")?>" class="form-control <?php displayValidationBootstrapClass($errors,"age") ?>">
+                    <?php displayFormError("age",$errors)?>
                 </div>
                 <div class="form-group">
-                    <label for="type">Poste</label>
-                    <select  name="type" class="form-select">
+                    <label for="poste">Poste</label>
+                    <select  name="poste" class="form-select">
                         <option></option>
                         <?php
-                        $req = $pdo->query("SELECT * FROM types");
+                        $req = $pdo->query("SELECT * FROM postes");
                         $resultats = $req->fetchAll();
                         foreach($resultats as $result){
                             $actif = '';
-                            if($_SERVER["REQUEST_METHOD"]=='POST' && $_POST["type"] == $result['id']){
+                            if($_SERVER["REQUEST_METHOD"]=='POST' && $_POST["poste"] == $result['id']){
                                 $actif = 'selected';
                             }
-                            echo('<option '.$actif.' value="'.$result["id"].'">'.$result["name"].'</option>');
+                            echo('<option '.$actif.' value="'.$result["id"].'">'.$result["poste_name"].'</option>');
                         }
                         ?>
                 </div>

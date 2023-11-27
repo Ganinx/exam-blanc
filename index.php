@@ -2,7 +2,10 @@
 include 'blocks/function.php';
 $pdo = dbconnect();
 session_start();
-var_dump($_SESSION);
+
+$query = $pdo -> query("SELECT * FROM players JOIN postes ON postes.id = post_id");
+$resultats = $query->fetchAll();
+
 ?>
 
 
@@ -24,6 +27,22 @@ var_dump($_SESSION);
 <body>
 <?php include 'blocks/navbar.php'?>
 
+<h1 class="text-center m-5">Liste des joueurs sélectionner actuellement</h1>
+<div class="row justify-content-center">
+<?php
+
+foreach ($resultats as $result){
+    echo('<div class="card pb-5" style="width: 20rem;">
+  <img src="'.$result["image"].'" class="card-img-top" alt="photo de '.$result["name"].' '.$result["firstname"].'">
+  <div class="card-body">
+    <h5 class="card-title">'.$result["firstname"].' '.$result["name"].'</h5>
+    <p class="card-text">Ocuppera le poste de '.$result["post_id"].'</p>
+  </div>
+</div>');
+}
+
+?>
+</div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
